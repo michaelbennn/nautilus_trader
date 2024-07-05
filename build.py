@@ -46,20 +46,26 @@ else:
 ################################################################################
 #  RUST BUILD
 ################################################################################
-if platform.system() == "Linux":
+CPU_ARCH = platform.machine()
+SYSTEM = platform.system()
+
+if SYSTEM == "Linux":
     # Use clang as the default compiler
     os.environ["CC"] = "clang"
     os.environ["LDSHARED"] = "clang -shared"
 
-TARGET_DIR = Path.cwd() / "nautilus_core" / "target" / BUILD_MODE
+if CPU_ARCH == "arm64" and SYSTEM == "Darwin":
+    TARGET_DIR = Path.cwd() / "nautilus_core" / "target" / "aarch64-apple-darwin" / BUILD_MODE
+else:
+    TARGET_DIR = Path.cwd() / "nautilus_core" / "target" / BUILD_MODE
 
-if platform.system() == "Windows":
+if SYSTEM == "Windows":
     # Linker error 1181
     # https://docs.microsoft.com/en-US/cpp/error-messages/tool-errors/linker-tools-error-lnk1181?view=msvc-170&viewFallbackFrom=vs-2019
     RUST_LIB_PFX = ""
     RUST_STATIC_LIB_EXT = "lib"
     RUST_DYLIB_EXT = "dll"
-elif platform.system() == "Darwin":
+elif SYSTEM == "Darwin":
     RUST_LIB_PFX = "lib"
     RUST_STATIC_LIB_EXT = "a"
     RUST_DYLIB_EXT = "dylib"
@@ -98,6 +104,10 @@ def _build_rust_libs() -> None:
 
         if RUST_TOOLCHAIN == "nightly":
             cmd_args.insert(1, "+nightly")
+
+        if SYSTEM == "Darwin":
+            cmd_args.append("--target")
+            cmd_args.append("aarch64-apple-darwin")
 
         print(" ".join(cmd_args))
 
@@ -151,14 +161,14 @@ def _build_extensions() -> list[Extension]:
     extra_compile_args = []
     extra_link_args = RUST_LIBS
 
-    if platform.system() != "Windows":
+    if SYSTEM != "Windows":
         # Suppress warnings produced by Cython boilerplate
         extra_compile_args.append("-Wno-unreachable-code")
         if BUILD_MODE == "release":
             extra_compile_args.append("-O2")
             extra_compile_args.append("-pipe")
 
-    if platform.system() == "Windows":
+    if SYSTEM == "Windows":
         extra_link_args += [
             "AdvAPI32.Lib",
             "bcrypt.lib",
@@ -201,7 +211,7 @@ def _build_extensions() -> list[Extension]:
 
 def _build_distribution(extensions: list[Extension]) -> Distribution:
     nthreads = os.cpu_count() or 1
-    if platform.system() == "Windows":
+    if SYSTEM == "Windows":
         nthreads = min(nthreads, 60)
     print(f"nthreads={nthreads}")
 
@@ -292,12 +302,12 @@ def _strip_unneeded_symbols() -> None:
     try:
         print("Stripping unneeded symbols from binaries...")
         for so in itertools.chain(Path("nautilus_trader").rglob("*.so")):
-            if platform.system() == "Linux":
+            if SYSTEM == "Linux":
                 strip_cmd = ["strip", "--strip-unneeded", so]
-            elif platform.system() == "Darwin":
+            elif SYSTEM == "Darwin":
                 strip_cmd = ["strip", "-x", so]
             else:
-                raise RuntimeError(f"Cannot strip symbols for platform {platform.system()}")
+                raise RuntimeError(f"Cannot strip symbols for platform {SYSTEM}")
             subprocess.run(
                 strip_cmd,  # type: ignore [arg-type]
                 check=True,
@@ -331,7 +341,7 @@ def build() -> None:
             # Copy the build back into the source tree for development and wheel packaging
             _copy_build_dir_to_project(cmd)
 
-    if BUILD_MODE == "release" and platform.system() in ("Linux", "Darwin"):
+    if BUILD_MODE == "release" and SYSTEM in ("Linux", "Darwin"):
         # Only strip symbols for release builds
         _strip_unneeded_symbols()
 
@@ -342,7 +352,7 @@ if __name__ == "__main__":
     print("=====================================================================")
     print(f"Nautilus Builder {nautilus_trader_version}")
     print("=====================================================================\033[0m")
-    print(f"System: {platform.system()} {platform.machine()}")
+    print(f"System: {SYSTEM} {CPU_ARCH}")
     print(f"Clang:  {_get_clang_version()}")
     print(f"Rust:   {_get_rustc_version()}")
     print(f"Python: {platform.python_version()}")

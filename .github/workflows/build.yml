@@ -2,7 +2,8 @@ name: build
 
 on:
   push:
-    branches: [master, nightly, develop]
+    # branches: [master, nightly, develop]
+    branches: [test-macos-build]
   pull_request:
     branches: [develop]
 
@@ -272,7 +273,7 @@ jobs:
           toolchain: ${{ env.RUST_VERSION }}
           override: true
           components: rustfmt, clippy
-          # target: aarch64-apple-darwin
+          target: aarch64-apple-darwin
 
       - name: Set up Python environment
         uses: actions/setup-python@v5
