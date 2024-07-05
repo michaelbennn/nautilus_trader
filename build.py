@@ -55,8 +55,6 @@ if SYSTEM == "Linux":
     os.environ["LDSHARED"] = "clang -shared"
 
 if CPU_ARCH == "arm64" and SYSTEM == "Darwin":
-    os.environ["CC"] = "clang -target arm64-apple-macos"
-    os.environ["LDSHARED"] = "clang -target arm64-apple-macos -shared"
     TARGET_DIR = Path.cwd() / "nautilus_core" / "target" / "aarch64-apple-darwin" / BUILD_MODE
 else:
     TARGET_DIR = Path.cwd() / "nautilus_core" / "target" / BUILD_MODE
@@ -362,8 +360,6 @@ if __name__ == "__main__":
     print(f"NumPy:  {np.__version__}\n")
 
     print(f"RUST_TOOLCHAIN={RUST_TOOLCHAIN}")
-    print(f"CC={os.environ.get('CC')}")
-    print(f"LDSHARED={os.environ.get('LDSHARED')}")
     print(f"BUILD_MODE={BUILD_MODE}")
     print(f"BUILD_DIR={BUILD_DIR}")
     print(f"PROFILE_MODE={PROFILE_MODE}")
