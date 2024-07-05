@@ -252,7 +252,6 @@ jobs:
     env:
       BUILD_MODE: debug
       RUST_BACKTRACE: 1
-      # CARGO_BUILD_TARGET: aarch64-apple-darwin
 
     steps:
       - name: Checkout repository
